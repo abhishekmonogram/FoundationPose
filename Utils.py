@@ -32,6 +32,7 @@ import matplotlib.pyplot as plt
 import math,glob,re,copy
 from transformations import *
 from scipy.spatial import cKDTree
+from scipy.spatial.transform import Rotation
 from collections import OrderedDict
 import ruamel.yaml
 yaml = ruamel.yaml.YAML()
@@ -1018,3 +1019,36 @@ def make_yaml_dumpable(D):
         D[d][i] = make_yaml_dumpable(D[d][i])
       continue
   return dict(D)
+
+def rotation_matrix_to_euler_angles(matrix):
+    """Converts a 3x3 rotation matrix to Euler angles."""
+    r = Rotation.from_matrix(matrix)
+    euler_angles = r.as_euler('zyx', degrees=True)  # ZYX convention, output in degrees
+    return euler_angles
+
+def matrices_to_euler_angles(matrix_list):
+    """Converts a list of 3x3 rotation matrices to Euler angles."""
+    euler_angles_list = []
+    for matrix in matrix_list:
+        euler_angles_list.append(rotation_matrix_to_euler_angles(matrix))
+    return euler_angles_list
+
+def create_mask(image,object_name):
+    print(f"Draw bounding box arounf {object_name} by selecting two points (top left and bottom right).")
+
+    # Display image and prompt user to select points
+    cv2.imshow('Image', image)
+    points = cv2.selectROI('Image', image, fromCenter=False)
+    cv2.destroyAllWindows()
+
+    # Extract coordinates of the selected points
+    x1, y1, width, height = points
+    x2, y2 = x1 + width, y1 + height
+
+    # Create a mask
+    mask = np.zeros(image.shape[:2], dtype=np.uint8)
+    mask[y1:y2, x1:x2] = 255
+
+    return mask.astype(bool)
+
+
